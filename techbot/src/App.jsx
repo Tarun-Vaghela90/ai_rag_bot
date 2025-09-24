@@ -86,9 +86,9 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-100 p-2 sm:p-6">
-      <div className="w-full max-w-lg h-full flex flex-col rounded-2xl gap-0 bg-white shadow-xl">
+      <div className="w-full max-w-lg h-full flex flex-col rounded-2xl gap-0 bg-[#F9FAFB] shadow-xl">
         {/* Header */}
-        <div className="flex flex-row justify-start h-16 sm:h-18 p-2 sm:p-3 items-center gap-2 sm:gap-3 bg-blue-400 rounded-t-2xl">
+        <div className="flex flex-row justify-start h-16 sm:h-18 p-2 sm:p-3 items-center gap-2 sm:gap-3 bg-[#0d6efd] rounded-t-2xl">
           <ChevronLeft className="rounded-2xl bg-amber-50 p-1 size-6 sm:size-7 hover:transition-transform duration-300 hover:rotate-180" />
           <BotIcon className="text-white" height={32} width={32} />
           <p className="text-base sm:text-lg text-white">W Bot</p>
@@ -120,8 +120,8 @@ function App() {
                   <div
                     className={`px-3 py-2 rounded-2xl max-w-[85%] sm:max-w-md whitespace-pre-wrap ${
                       msg.role === "user"
-                        ? "bg-blue-600 text-white shadow-md text-[16px] sm:text-[18px]"
-                        : "bg-gray-200 border shadow-md text-gray-800 text-[16px] sm:text-[18px]"
+                        ? "bg-blue-600 text-white shadow-md   text-[16px] sm:text-[18px]"
+                        : "bg-white  shadow-lg  text-gray-800  text-[16px] sm:text-[18px]"
                     }`}
                   >
                     {Array.isArray(msg.content)
@@ -155,15 +155,15 @@ function App() {
         </div>
 
         {/* Input */}
-        <div className="flex items-center gap-2 w-full p-2 sm:p-3">
+        <div className="flex items-center gap-2 w-full p-2 mb-3 sm:p-3">
           <Input
             placeholder="Type your message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            className="flex-1 rounded-lg shadow-md text-sm sm:text-base"
+            className="flex-1 rounded-2xl h-10 shadow-md text-sm sm:text-base"
           />
-          <Button onClick={handleSend} className="shadow-md p-2 sm:px-4" disabled={loading}>
+          <Button onClick={handleSend} className="shadow-md bg-blue-600 p-2 rounded-full h-10 w-10   sm:px-4 hover:bg-blue-500 " disabled={loading}>
             {loading ? "..." : <SendHorizonalIcon className="size-5 sm:size-6" />}
           </Button>
         </div>

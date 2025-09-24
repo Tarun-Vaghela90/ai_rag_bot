@@ -23,11 +23,27 @@ router.post("/add-doc", async (req, res) => {
 
 
 
+/* {
+   "hashkey" : "querys converted hash key stored",
+   "query" : "user query",
+   "query_embeddings":"user query embeddings",
+   "gemini_response":"store  gemini response"
+}
+*/
+
+
 // ---------------- Redis Helper ----------------
-const redisStore = async (embeddingKey, embeddings) => {
+const redisStore = async (embeddingKey,userQuery, embeddings) => {
   try {
     // Convert embeddings array to a string
     const value = JSON.stringify(embeddings);
+
+    const geminiCache = {
+      hashkey:embeddingKey ,
+      query: userQuery,
+      query_embeddings: embeddings,
+      gemini_response: null
+    }
 
     // ioredis syntax for expiration
     await redis.set(embeddingKey, value, "EX", 86400); // 1 day
@@ -47,12 +63,12 @@ router.post("/chat", async (req, res) => {
     }
 
     const lowerQ = query.toLowerCase();
-    const greetings = ["hi", "hello", "hey", "uu", "good evening" , "good morning"];
-  const greetingRegex = /^(hi|hello|hey|uu|good morning|good evening)[.!?]?$/i;
+    const greetings = ["hi", "hello", "hey", "uu", "good evening", "good morning"];
+    const greetingRegex = /^(hi|hello|hey|uu|good morning|good evening)[.!?]?$/i;
 
-if (greetingRegex.test(query.trim())) {
-  return res.json({ answer: "Welcome! How can we assist you today?", context: null });
-}
+    if (greetingRegex.test(query.trim())) {
+      return res.json({ answer: "Welcome! How can we assist you today?", context: null });
+    }
 
 
 
@@ -87,7 +103,7 @@ if (greetingRegex.test(query.trim())) {
       if (cachedEmbedding) {
         try {
           queryVector = JSON.parse(cachedEmbedding);
-        console.log("redis  embeddings  used")
+          console.log("redis  embeddings  used")
         } catch (err) {
           console.warn("Failed to parse cached embedding, regenerating...");
           queryVector = await createEmbedding(query);
