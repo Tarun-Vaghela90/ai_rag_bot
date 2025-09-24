@@ -47,11 +47,14 @@ router.post("/chat", async (req, res) => {
     }
 
     const lowerQ = query.toLowerCase();
-    const greetings = ["hi", "hello", "hey", "uu", "good evening"];
-    const lowerQWords = lowerQ.match(/\b\w+\b/g); // split query into words
-if (greetings.some((greet) => lowerQWords.includes(greet))) {
+    const greetings = ["hi", "hello", "hey", "uu", "good evening" , "good morning"];
+  const greetingRegex = /^(hi|hello|hey|uu|good morning|good evening)[.!?]?$/i;
+
+if (greetingRegex.test(query.trim())) {
   return res.json({ answer: "Welcome! How can we assist you today?", context: null });
 }
+
+
 
     // Block forbidden system/meta questions
     const forbiddenPhrases = [
