@@ -42,7 +42,6 @@ function App() {
           <span className="w-3 h-3 rounded-full bg-gray-600 animate-bounce [animation-delay:200ms]" />
           <span className="w-3 h-3 rounded-full bg-gray-600 animate-bounce [animation-delay:400ms]" />
         </div>
-        
       ),
       isTyping: true,
     };
@@ -75,7 +74,11 @@ function App() {
       setMessages((prev) =>
         prev.map((msg) =>
           msg.isTyping
-            ? { role: "assistant", content: "⚠️ Error connecting to server.", future_actions: [] }
+            ? {
+                role: "assistant",
+                content: "⚠️ Error connecting to server.",
+                future_actions: [],
+              }
             : msg
         )
       );
@@ -86,7 +89,8 @@ function App() {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-gray-100 p-2 sm:p-6">
-      <div className="w-full max-w-lg h-full flex flex-col rounded-2xl gap-0 bg-[#F9FAFB] shadow-xl">
+      {/* bot */}
+      <div className="w-full max-w-lg h-full flex flex-col rounded-2xl gap-0 bg-gradient-to-b from-blue-50 to-white shadow-xl">
         {/* Header */}
         <div className="flex flex-row justify-start h-16 sm:h-18 p-2 sm:p-3 items-center gap-2 sm:gap-3 bg-[#0d6efd] rounded-t-2xl">
           <ChevronLeft className="rounded-2xl bg-amber-50 p-1 size-6 sm:size-7 hover:transition-transform duration-300 hover:rotate-180" />
@@ -100,13 +104,20 @@ function App() {
             <div key={idx} className="mb-3">
               <div
                 className={`flex gap-2 ${
-                  msg.role === "user" ? "flex-col sm:flex-row-reverse" : "flex-col sm:flex-row"
+                  msg.role === "user"
+                    ? "flex-col sm:flex-row-reverse"
+                    : "flex-col sm:flex-row"
                 }`}
               >
                 {/* Avatar */}
                 <Avatar>
-                  <AvatarImage src={msg.role === "assistant" ? wingstechlogo : userAvatar} alt={msg.role} />
-                  <AvatarFallback>{msg.role === "assistant" ? "WT" : "U"}</AvatarFallback>
+                  <AvatarImage
+                    src={msg.role === "assistant" ? wingstechlogo : userAvatar}
+                    alt={msg.role}
+                  />
+                  <AvatarFallback>
+                    {msg.role === "assistant" ? "WT" : "U"}
+                  </AvatarFallback>
                 </Avatar>
 
                 {/* Message / typing dots */}
@@ -118,7 +129,7 @@ function App() {
                   </div>
                 ) : (
                   <div
-                    className={`px-3 py-2 rounded-2xl max-w-[85%] sm:max-w-md whitespace-pre-wrap ${
+                    className={`px-3 py-2 rounded-2xl max-w-[99%] sm:max-w-md whitespace-pre-wrap ${
                       msg.role === "user"
                         ? "bg-blue-600 text-white shadow-md   text-[16px] sm:text-[18px]"
                         : "bg-white  shadow-lg  text-gray-800  text-[16px] sm:text-[18px]"
@@ -141,9 +152,15 @@ function App() {
 
               {/* Future actions */}
               {msg.role === "assistant" && msg.future_actions?.length > 0 && (
-                <div className="mt-1 sm:mt-2 flex gap-2 flex-wrap pl-0 sm:pl-10">
+                <div className="mt-1 bg sm:mt-2 flex gap-2 flex-wrap pl-0 sm:pl-10">
                   {msg.future_actions.map((action, i) => (
-                    <Button key={i} size="sm" variant="outline" onClick={() => sendQuery(action)}>
+                    <Button
+                      key={i}
+                      size="sm"
+                      className="text-[14px] transition-colors duration-300 hover:border-blue-500 hover:bg-white hover:text-blue-500"
+                      variant="outline"
+                      onClick={() => sendQuery(action)}
+                    >
                       {action}
                     </Button>
                   ))}
@@ -163,8 +180,16 @@ function App() {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             className="flex-1 rounded-2xl h-10 shadow-md text-sm sm:text-base"
           />
-          <Button onClick={handleSend} className="shadow-md bg-blue-600 p-2 rounded-full h-10 w-10   sm:px-4 hover:bg-blue-500 " disabled={loading}>
-            {loading ? "..." : <SendHorizonalIcon className="size-5 sm:size-6" />}
+          <Button
+            onClick={handleSend}
+            className="shadow-md bg-blue-600 p-2 rounded-full  h-10 w-10   sm:px-4 hover:bg-blue-500 "
+            disabled={loading}
+          >
+            {loading ? (
+              "..."
+            ) : (
+              <SendHorizonalIcon className="size-5 sm:size-6" />
+            )}
           </Button>
         </div>
       </div>

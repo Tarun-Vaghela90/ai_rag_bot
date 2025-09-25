@@ -36,6 +36,12 @@ app.use('/product', productRoutes);
 app.use('/search',searchRoute)
 app.use('/rag',ragChatbotRoute)
 app.use('/prompt',PromptRoutes)
+
+
+
+
+
+
 app.listen(port, () =>
   console.log(`Server running at http://localhost:${port}`)
 );
