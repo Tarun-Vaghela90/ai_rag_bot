@@ -64,53 +64,53 @@ function App() {
     localStorage.setItem(`chatMessages_${userId}`, JSON.stringify(messages));
   }, [messages, userId]);
 
-  const sendQuery = async (queryText) => {
-    if (!queryText.trim()) return;
+ const sendQuery = async (queryText) => {
+  if (!queryText.trim()) return;
 
-    const userMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: queryText,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+  const userMsgId = uuidv4();
+  const botTypingId = uuidv4();
 
-    const typingMessage = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: "",
-      isTyping: true,
-    };
-    setMessages((prev) => [...prev, typingMessage]);
+  // 1️⃣ Immediately add user message
+  const userMessage = {
+    id: userMsgId,
+    role: "user",
+    content: queryText,
+  };
 
-    setLoading(true);
+  // 2️⃣ Immediately add typing indicator
+  const typingMessage = {
+    id: botTypingId,
+    role: "assistant",
+    content: "",
+    isTyping: true,
+  };
 
-    try {
-      const res = await axios.post("http://localhost:5000/rag/chat", {
-        query: queryText,
-        userId,
-      });
+  // Update state once: user + typing
+  setMessages((prev) => [...prev, userMessage, typingMessage]);
+  setInput("");
+  setLoading(true);
 
+  // 3️⃣ Fetch bot response asynchronously, no blocking
+  axios
+    .post("http://localhost:5000/rag/chat", { query: queryText, userId })
+    .then((res) => {
       const botReply = res.data.answer || "⚠️ Sorry, I didn’t get that.";
       const futureActions = res.data.future_actions || [];
 
+      // Replace typing bubble with real response
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.isTyping
-            ? {
-                ...msg,
-                content: botReply,
-                future_actions: futureActions,
-                isTyping: false,
-              }
+          msg.id === botTypingId
+            ? { ...msg, content: botReply, future_actions: futureActions, isTyping: false }
             : msg
         )
       );
-    } catch (err) {
+    })
+    .catch((err) => {
       console.error(err);
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.isTyping
+          msg.id === botTypingId
             ? {
                 ...msg,
                 content: "⚠️ Error connecting to server.",
@@ -120,10 +120,11 @@ function App() {
             : msg
         )
       );
-    } finally {
-      setLoading(false);
-    }
-  };
+    })
+    .finally(() => setLoading(false));
+};
+
+
 
   const handleSend = () => sendQuery(input);
 
@@ -192,11 +193,7 @@ function App() {
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{
-                    duration: 0.4,
-                    delay: index * 0.1,
-                    ease: [0.4, 0.0, 0.2, 1],
-                  }}
+                  
                   className="flex gap-4"
                 >
                   {msg.role === "assistant" && (
