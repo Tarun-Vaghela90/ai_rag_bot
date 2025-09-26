@@ -18,7 +18,7 @@ const chatLimiter = rateLimit({
   legacyHeaders: false, // disable old headers
 });
 
-router.post("/add-doc",chatLimiter, async (req, res) => {
+router.post("/add-doc", chatLimiter, async (req, res) => {
   const { content } = req.body;
   if (!content) return res.status(400).json({ error: "Content is required" });
 
@@ -64,9 +64,10 @@ const redisStoreResponse = async (responseKey, query, response) => {
 };
 
 // ---------------- RAG Chat Route ----------------
-router.post("/chat",chatLimiter, async (req, res) => {
+router.post("/chat", chatLimiter, async (req, res) => {
   try {
     const { query, userId } = req.body;
+    console.log("user query", query)
     if (!query || !userId) {
       return res.status(400).json({ error: "Query or userId is missing" });
     }
@@ -99,7 +100,9 @@ router.post("/chat",chatLimiter, async (req, res) => {
     botchat.messages.push({ role: "user", content: query });
 
     // ---------------- Keys ----------------
-    const hash = crypto.createHash("md5").update(query).digest("hex");
+    const normalizedQuery = query.trim().toLowerCase().replace(/[?.!]/g, "");
+    const hash = crypto.createHash("md5").update(normalizedQuery).digest("hex");
+
     const embeddingKey = `embedding:${hash}`;
     const responseKey = `response:${hash}`;
 
@@ -200,4 +203,3 @@ router.post("/chat",chatLimiter, async (req, res) => {
 });
 
 export default router;
-

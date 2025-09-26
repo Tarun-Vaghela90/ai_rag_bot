@@ -20,30 +20,39 @@ async function callGemini(prompt) {
             properties: {
               gemini: {
                 type: Type.ARRAY,
-                items:{
-                  type:Type.STRING
-                }
+                items: { type: Type.STRING }
               },
               future_actions: {
                 type: Type.ARRAY,
-                items: {
-                  type: Type.STRING,
-                },
+                items: { type: Type.STRING }
               },
             },
-            propertyOrdering: ["gemini", "future_actions"], // ✅ correctly inside object schema
+            propertyOrdering: ["gemini", "future_actions"],
           },
         },
       },
     });
-    const resDoc = JSON.parse(response.text)
-    // console.log(resDoc)
-    return resDoc;
+
+    // ✅ If SDK gives structured output
+    // if (response.output) {
+    //   console.log("output",response.output)
+    //   return response.output;
+    // }
+    
+    // ✅ Fallback if text is returned
+    if (response.text) {
+      //   console.log("output",response.)
+      return JSON.parse(response.text);
+    }
+
+    throw new Error("No valid Gemini response format found");
+
   } catch (err) {
     console.error("Gemini call error:", err);
     return null;
   }
 }
+
 
 // Create embedding vector
 async function createEmbedding(text) {
