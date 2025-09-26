@@ -66,8 +66,11 @@ const redisStoreResponse = async (responseKey, query, response) => {
 // ---------------- RAG Chat Route ----------------
 router.post("/chat", chatLimiter, async (req, res) => {
   try {
+    
+
     const { query, userId } = req.body;
-    console.log("user query", query)
+    console.log("user query", query);
+
     if (!query || !userId) {
       return res.status(400).json({ error: "Query or userId is missing" });
     }
@@ -75,12 +78,12 @@ router.post("/chat", chatLimiter, async (req, res) => {
     const lowerQ = query.toLowerCase();
     const greetingRegex = /^(hi|hello|hey|uu|good morning|good evening)[.!?]?$/i;
 
-    // Handle greetings
+    // ---------------- Handle greetings ----------------
     if (greetingRegex.test(query.trim())) {
       return res.json({ answer: "Welcome! How can we assist you today?", context: null });
     }
 
-    // Block forbidden system/meta questions
+    // ---------------- Block forbidden questions ----------------
     const forbiddenPhrases = [
       "what is your role",
       "who are you",
@@ -92,12 +95,18 @@ router.post("/chat", chatLimiter, async (req, res) => {
       "prompt injection",
     ];
     if (forbiddenPhrases.some((p) => lowerQ.includes(p))) {
-      return res.json({ answer: "I'm here to help with questions about Wings Tech Solutions.", context: null });
+      return res.json({
+        answer: "I'm here to help with questions about Wings Tech Solutions.",
+        context: null
+      });
     }
 
-    // Chat history
-    let botchat = await BotChat.findOne({ userId }) || new BotChat({ userId, messages: [] });
-    botchat.messages.push({ role: "user", content: query });
+    // ---------------- Save user message (keep last 6) ----------------
+    await BotChat.updateOne(
+      { userId },
+      { $push: { messages: { $each: [{ role: "user", content: query }], $slice: -6 } } },
+      { upsert: true }
+    );
 
     // ---------------- Keys ----------------
     const normalizedQuery = query.trim().toLowerCase().replace(/[?.!]/g, "");
@@ -123,7 +132,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
       console.warn("Redis unavailable for response:", err);
     }
 
-    // ---------------- Embedding (check cache first) ----------------
+    // ---------------- Embedding ----------------
     let queryVector;
     try {
       const cachedEmbedding = await redis.get(embeddingKey);
@@ -152,7 +161,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
           path: "embedding",
           queryVector,
           numCandidates: 50,
-          limit: 5,
+          limit: 6,
         },
       },
       { $project: { _id: 1, content: 1, score: { $meta: "vectorSearchScore" } } },
@@ -163,8 +172,9 @@ router.post("/chat", chatLimiter, async (req, res) => {
     );
 
     // ---------------- Build Context & Prompt ----------------
-    const history = botchat.messages.length
-      ? botchat.messages.slice(-6).map((m) => `${m.role}: ${m.content}`).join("\n")
+    const botchat = await BotChat.findOne({ userId });
+    const history = botchat?.messages?.length
+      ? botchat.messages.map((m) => `${m.role}: ${m.content}`).join("\n")
       : "No User History";
 
     const contextText = topDocs.map((d, i) => `Doc${i + 1}: ${d.content}`).join("\n\n");
@@ -181,11 +191,13 @@ router.post("/chat", chatLimiter, async (req, res) => {
     const geminiResponse = answer[0].gemini || ["I don't know"];
     const futureActions = answer[0].future_actions || [];
 
-    // Store in MongoDB
-    botchat.messages.push({ role: "bot", content: geminiResponse });
-    await botchat.save();
+    // ---------------- Save bot message (keep last 6) ----------------
+    await BotChat.updateOne(
+      { userId },
+      { $push: { messages: { $each: [{ role: "bot", content: geminiResponse }], $slice: -6 } } }
+    );
 
-    // ---------------- Cache Response for 1 hour ----------------
+    // ---------------- Cache Response ----------------
     await redisStoreResponse(responseKey, query, geminiResponse);
 
     // ---------------- Send Response ----------------
@@ -193,7 +205,8 @@ router.post("/chat", chatLimiter, async (req, res) => {
       answer: geminiResponse,
       future_actions: futureActions,
       context: topDocs.map((d) => ({ content: d.content, score: d.score })),
-      cacheHit: false
+      cacheHit: false,
+      prompt:promptToSend
     });
 
   } catch (err) {
@@ -201,5 +214,6 @@ router.post("/chat", chatLimiter, async (req, res) => {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 });
+
 
 export default router;

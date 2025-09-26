@@ -17,15 +17,16 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-
+import { v4 as uuidv4 } from "uuid";
+import userLogo  from './assets/user.jpg'
 const wingstechlogo = wingstech;
-const userAvatar = "https://via.placeholder.com/40x40/6b7280/ffffff?text=U";
+const userAvatar = userLogo;
 
 function App() {
   // Get userId from localStorage or generate a new one
   let userId = localStorage.getItem("chatUserId");
   if (!userId) {
-    userId = Date.now().toString();
+    userId = uuidv4();
     localStorage.setItem("chatUserId", userId);
   }
 
