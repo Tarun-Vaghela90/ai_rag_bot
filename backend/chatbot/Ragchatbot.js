@@ -131,6 +131,6 @@ User: ${query}`;
 });
 
 // Start server
-app.listen(5000, () =>
+app.listen(process.env.PORT, () =>
   console.log("🚀 RAG Chatbot running on http://localhost:5000")
 );
