@@ -132,5 +132,5 @@ User: ${query}`;
 
 // Start server
 app.listen(process.env.PORT, () =>
-  console.log("🚀 RAG Chatbot running on http://localhost:5000")
+  console.log(`🚀 RAG Chatbot running on http://localhost:${REDIS_USERNAME}`)
 );
