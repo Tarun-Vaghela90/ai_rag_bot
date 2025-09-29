@@ -92,7 +92,7 @@ function App() {
 
   // 3️⃣ Fetch bot response asynchronously, no blocking
   axios
-    .post("http://localhost:5000/rag/chat", { query: queryText, userId })
+    .post(import.meta.env.VITE_PROD_URL, { query: queryText, userId })
     .then((res) => {
       const botReply = res.data.answer || "⚠️ Sorry, I didn’t get that.";
       const futureActions = res.data.future_actions || [];
