@@ -92,7 +92,7 @@ function App() {
 
   // 3️⃣ Fetch bot response asynchronously, no blocking
   axios
-    .post(import.meta.env.VITE_PROD_URL, { query: queryText, userId })
+    .post(import.meta.env.VITE_LOCAL_URL , { query: queryText, userId })
     .then((res) => {
       const botReply = res.data.answer || "⚠️ Sorry, I didn’t get that.";
       const futureActions = res.data.future_actions || [];
@@ -123,8 +123,6 @@ function App() {
     })
     .finally(() => setLoading(false));
 };
-
-
 
   const handleSend = () => sendQuery(input);
 
@@ -252,16 +250,21 @@ function App() {
                               <ReactMarkdown
                                 components={{
                                   ul: ({ node, ...props }) => (
-                                    <ul
-                                      className="list-disc ml-4 mb-0"
-                                      {...props}
-                                    />
+                                    <ul className="list-disc ml-4 mb-0" {...props} />
                                   ),
                                   li: ({ node, ...props }) => (
                                     <li className="mb-1" {...props} />
                                   ),
                                   p: ({ node, ...props }) => (
                                     <p className="mb-2 last:mb-0" {...props} />
+                                  ),
+                                  a: ({ node, ...props }) => (
+                                    <a
+                                      {...props}
+                                      className="text-blue-600 font-semibold hover:underline"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    />
                                   ),
                                 }}
                               >
@@ -296,8 +299,20 @@ function App() {
                                     onClick={() => sendQuery(action)}
                                     className="text-xs bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 rounded-full"
                                   >
-                                    <MessageCircle className="h-3 w-3 mr-1" />
-                                    {action}
+                                    <ReactMarkdown
+                                      components={{
+                                        a: ({ node, ...props }) => (
+                                          <a
+                                            {...props}
+                                            className="text-blue-600 font-semibold hover:underline"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          />
+                                        ),
+                                      }}
+                                    >
+                                      {action}
+                                    </ReactMarkdown>
                                   </Button>
                                 </motion.div>
                               ))}
@@ -368,7 +383,6 @@ function App() {
             <p className="text-xs text-slate-500 text-center flex-1">
               Powered by Wings Tech AI • Press Enter to send
             </p>
-            
           </div>
         </div>
       </Card>
