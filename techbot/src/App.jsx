@@ -234,7 +234,7 @@ function App() {
                           ))}
                         </div>
                         <span className="text-slate-500 text-sm">
-                          thinking...
+                          Writing...
                         </span>
                       </motion.div>
                     ) : (

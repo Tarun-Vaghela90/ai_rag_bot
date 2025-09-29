@@ -18,16 +18,29 @@ const chatLimiter = rateLimit({
   legacyHeaders: false, // disable old headers
 });
 
-router.post("/add-doc", chatLimiter, async (req, res) => {
+router.post("/add-doc", async (req, res) => {
   const { content } = req.body;
   if (!content) return res.status(400).json({ error: "Content is required" });
 
-  const embedding = await createEmbedding(content);
-  const doc = new Doc({ content, embedding });
-  await doc.save();
+  try {
+    // Check if content already exists
+    const existing = await Doc.findOne({ content });
+    if (existing) {
+      return res.status(200).json({ message: "Document already exists, skipping duplicate" });
+    }
 
-  res.json({ message: "Document saved" });
+    // Create embedding and save
+    const embedding = await createEmbedding(content);
+    const doc = new Doc({ content, embedding });
+    await doc.save();
+
+    res.json({ message: "Document saved" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
+
 
 
 

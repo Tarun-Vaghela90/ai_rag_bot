@@ -10,11 +10,12 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server: {
-    host: true, // allows network access
-    port: 5173,
-    allowedHosts: [
-      // just the hostname, no https://
-    ]
-  }
 })
+
+// server: {
+//   host: true, // allows network access
+//   port: 5173,
+//   allowedHosts: [
+//     // just the hostname, no https://
+//   ]
+// }

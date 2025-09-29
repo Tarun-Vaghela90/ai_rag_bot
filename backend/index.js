@@ -42,6 +42,6 @@ app.use('/prompt',PromptRoutes)
 
 
 
-app.listen(port, () =>
-  console.log(`Server running at http://localhost:${port}`)
+app.listen(process.env.PORT, () =>
+  console.log(`Server running at http://localhost:${process.env.PORT}`)
 );
