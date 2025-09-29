@@ -10,7 +10,7 @@ import rateLimit from "express-rate-limit";
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // limit each IP/user to 100 requests per window
+  max: 100, // limit each IP/user to 100 requests per window
   message: {
     error: "Too many requests, please try again after an hour."
   },
