@@ -1,6 +1,7 @@
 // cache.js
 import Redis from "ioredis";
-
+import dotenv from 'dotenv';
+dotenv.config({path:"./.env"});
 let redis;
 try {
 redis = new Redis({
