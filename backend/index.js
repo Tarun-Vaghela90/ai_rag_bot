@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import { GoogleGenAI, Type } from "@google/genai";
+import helmet from 'helmet'
 import aichatRoutes from './routes/aichatRoutes.js';
 import productRoutes from './routes/productRoutes.js'
 import searchRoute from './routes/search/searchRoute.js'
@@ -9,6 +9,7 @@ import morgan from 'morgan';
 import mongoose from 'mongoose';
 import ragChatbotRoute from './routes/Rag/Ragchatbot.js'
 import PromptRoutes from './routes/prompt/Prompt.js'
+
 dotenv.config();
 const app = express();
 const port = process.env.PORT;
@@ -19,6 +20,7 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE"], // allowed methods
     credentials: true,
 }));
+app.use(helmet())
 app.use(express.json());
 
 async function connectDB() {
