@@ -16,6 +16,7 @@ const chatLimiter = rateLimit({
   },
   standardHeaders: true, // return rate limit info in headers
   legacyHeaders: false, // disable old headers
+  keyGenerator: (req) => req.ip,
 });
 
 router.post("/add-doc", async (req, res) => {
