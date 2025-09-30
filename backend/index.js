@@ -14,7 +14,11 @@ const app = express();
 const port = process.env.PORT;
 
 app.use(morgan('dev'))
-app.use(cors());
+app.use(cors({
+  origin:process.env.ORIGIN_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"], // allowed methods
+    credentials: true,
+}));
 app.use(express.json());
 
 async function connectDB() {
