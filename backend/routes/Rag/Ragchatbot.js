@@ -265,9 +265,9 @@ if (candidates.length > 0) {
     res.json({
       answer: geminiResponse,
       future_actions: futureActions,
-      context: topDocs.map((d) => ({ content: d.content, score: d.score })),
-      cacheHit: false,
-      prompt: promptToSend
+      // context: topDocs.map((d) => ({ content: d.content, score: d.score })),
+      // cacheHit: false,
+      // prompt: promptToSend
     });
 
   } catch (err) {
