@@ -23,6 +23,8 @@ const wingstechlogo = wingstech;
 const userAvatar = userLogo;
 
 function App() {
+  const BASE_URL = import.meta.env.VITE_PROD_URL || import.meta.env.VITE_LOCAL_URL;
+  console.log(BASE_URL)
   // Get userId from localStorage or generate a new one
   let userId = localStorage.getItem("chatUserId");
   if (!userId) {
@@ -92,7 +94,7 @@ function App() {
 
   // 3️⃣ Fetch bot response asynchronously, no blocking
   axios
-    .post(import.meta.env.VITE_LOCAL_URL , { query: queryText, userId })
+    .post(`${BASE_URL}`  , { query: queryText, userId })
     .then((res) => {
       const botReply = res.data.answer || "⚠️ Sorry, I didn’t get that.";
       const futureActions = res.data.future_actions || [];
