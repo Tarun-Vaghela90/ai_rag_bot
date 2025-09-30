@@ -24,7 +24,6 @@ const userAvatar = userLogo;
 
 function App() {
   const BASE_URL = import.meta.env.VITE_PROD_URL || import.meta.env.VITE_LOCAL_URL;
-  console.log(BASE_URL)
   // Get userId from localStorage or generate a new one
   let userId = localStorage.getItem("chatUserId");
   if (!userId) {
@@ -263,7 +262,7 @@ function App() {
                                   a: ({ node, ...props }) => (
                                     <a
                                       {...props}
-                                      className="text-blue-600 font-semibold hover:underline"
+                                      className="text-blue-600  hover:underline"
                                       target="_blank"
                                       rel="noopener noreferrer"
                                     />
