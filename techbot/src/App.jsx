@@ -305,7 +305,7 @@ function App() {
                                         a: ({ node, ...props }) => (
                                           <a
                                             {...props}
-                                            className="text-blue-600 font-semibold hover:underline"
+                                            className="text-blue-600 font-semibold  hover:underline"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                           />

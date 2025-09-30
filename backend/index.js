@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 import ragChatbotRoute from './routes/Rag/Ragchatbot.js'
 import PromptRoutes from './routes/prompt/Prompt.js'
 
-dotenv.config();
+dotenv.config({ debug: false });
 const app = express();
 const port = process.env.PORT;
 
@@ -26,10 +26,7 @@ app.use(express.json());
 
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ MongoDB Connected Successfully");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);

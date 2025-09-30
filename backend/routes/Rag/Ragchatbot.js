@@ -6,17 +6,17 @@ import redis from "../../cache.js";
 import { callGemini, createEmbedding } from "../../services/GeminiServices.js";
 const router = express.Router();
 import crypto from "crypto";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator }from "express-rate-limit";
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 100, // limit each IP/user to 100 requests per window
+  max: 100,                  // limit each IP/user to 100 requests per window
   message: {
     error: "Too many requests, please try again after an hour."
   },
-  standardHeaders: true, // return rate limit info in headers
-  legacyHeaders: false, // disable old headers
-  keyGenerator: (req) => req.ip,
+  standardHeaders: true,     // return rate limit info in headers
+  legacyHeaders: false,      // disable old headers
+  keyGenerator: (req) => ipKeyGenerator(req), // ✅ safe for IPv6
 });
 
 router.post("/add-doc", async (req, res) => {
@@ -80,7 +80,7 @@ const redisStoreResponse = async (responseKey, query, response) => {
 // ---------------- RAG Chat Route ----------------
 router.post("/chat", chatLimiter, async (req, res) => {
   try {
-    
+
 
     const { query, userId } = req.body;
     console.log("user query", query);
@@ -168,18 +168,57 @@ router.post("/chat", chatLimiter, async (req, res) => {
     }
 
     // ---------------- Fetch Top Documents ----------------
-    const topDocsRaw = await Doc.aggregate([
-      {
-        $vectorSearch: {
-          index: "vector_index",
-          path: "embedding",
-          queryVector,
-          numCandidates: 50,
-          limit: 6,
-        },
-      },
-      { $project: { _id: 1, content: 1, score: { $meta: "vectorSearchScore" } } },
-    ]);
+    // Step 1: get candidate docs by regex
+const candidates = await Doc.find({
+  content: { $regex: query, $options: "i" }  // case-insensitive
+}).select("_id");
+
+let topDocsRaw;
+
+if (candidates.length > 0) {
+  // Run vector search restricted to those docs
+  topDocsRaw = await Doc.aggregate([
+    {
+      $vectorSearch: {
+        index: "vector_index",
+        path: "embedding",
+        queryVector,
+        numCandidates: 50,
+        limit: 6,
+        filter: { _id: { $in: candidates.map(d => d._id) } }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        score: { $meta: "vectorSearchScore" }
+      }
+    }
+  ]);
+} else {
+  // Fallback: run vector search on the whole collection
+  console.log("❌ fall back to whole collection vector search")
+  topDocsRaw = await Doc.aggregate([
+    {
+      $vectorSearch: {
+        index: "vector_index",
+        path: "embedding",
+        queryVector,
+        numCandidates: 50,
+        limit: 6
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        score: { $meta: "vectorSearchScore" }
+      }
+    }
+  ]);
+}
+
 
     const topDocs = topDocsRaw.filter(
       (doc) => !/(secret|password|internal|ignore|instruction|reveal|prompt)/i.test(doc.content)
@@ -213,13 +252,13 @@ router.post("/chat", chatLimiter, async (req, res) => {
 
     // ---------------- Cache Response ----------------
     // await redisStoreResponse(responseKey, query, geminiResponse);
-const skipQueries = ["where", "what", "who", "when", "how", "which"];
-if (!skipQueries.includes(query.trim().toLowerCase())) {
-  console.log("✅ Bot response stored in Redis");
-  await redisStoreResponse(responseKey, query, geminiResponse);
-} else {
-  console.log("⚠️ Skipped caching for ambiguous query:", query);
-}
+    const skipQueries = ["where", "what", "who", "when", "how", "which"];
+    if (!skipQueries.includes(query.trim().toLowerCase())) {
+      console.log("✅ Bot response stored in Redis");
+      await redisStoreResponse(responseKey, query, geminiResponse);
+    } else {
+      console.log("⚠️ Skipped caching for ambiguous query:", query);
+    }
 
 
     // ---------------- Send Response ----------------
@@ -228,7 +267,7 @@ if (!skipQueries.includes(query.trim().toLowerCase())) {
       future_actions: futureActions,
       context: topDocs.map((d) => ({ content: d.content, score: d.score })),
       cacheHit: false,
-      prompt:promptToSend
+      prompt: promptToSend
     });
 
   } catch (err) {
