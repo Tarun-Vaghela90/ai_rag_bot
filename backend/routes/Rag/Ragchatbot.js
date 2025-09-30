@@ -211,7 +211,15 @@ router.post("/chat", chatLimiter, async (req, res) => {
     );
 
     // ---------------- Cache Response ----------------
-    await redisStoreResponse(responseKey, query, geminiResponse);
+    // await redisStoreResponse(responseKey, query, geminiResponse);
+const skipQueries = ["where", "what", "who", "when", "how", "which"];
+if (!skipQueries.includes(query.trim().toLowerCase())) {
+  console.log("✅ Bot response stored in Redis");
+  await redisStoreResponse(responseKey, query, geminiResponse);
+} else {
+  console.log("⚠️ Skipped caching for ambiguous query:", query);
+}
+
 
     // ---------------- Send Response ----------------
     res.json({
