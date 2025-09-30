@@ -152,7 +152,7 @@ function App() {
                     WT
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+                {/* <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" /> */}
               </div>
               <div>
                 <h1 className="font-semibold text-lg">Wings Bot</h1>
