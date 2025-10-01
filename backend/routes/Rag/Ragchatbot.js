@@ -6,7 +6,7 @@ import redis from "../../cache.js";
 import { callGemini, createEmbedding } from "../../services/GeminiServices.js";
 const router = express.Router();
 import crypto from "crypto";
-import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import rateLimit, { ipKeyGenerator }from "express-rate-limit";
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -168,18 +168,56 @@ router.post("/chat", chatLimiter, async (req, res) => {
     }
 
     // ---------------- Fetch Top Documents ----------------
-    const topDocsRaw = await Doc.aggregate([
-      {
-        $vectorSearch: {
-          index: "vector_index",
-          path: "embedding",
-          queryVector,
-          numCandidates: 20,
-          limit: 6,
-        },
-      },
-      { $project: { _id: 1, content: 1, score: { $meta: "vectorSearchScore" } } },
-    ]);
+    // Step 1: get candidate docs by regex
+const candidates = await Doc.find({
+  content: { $regex: query, $options: "i" }  // case-insensitive
+}).select("_id");
+
+let topDocsRaw;
+
+if (candidates.length > 0) {
+  // Run vector search restricted to those docs
+  topDocsRaw = await Doc.aggregate([
+    {
+      $vectorSearch: {
+        index: "vector_index",
+        path: "embedding",
+        queryVector,
+        numCandidates: 50,
+        limit: 6,
+        filter: { _id: { $in: candidates.map(d => d._id) } }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        score: { $meta: "vectorSearchScore" }
+      }
+    }
+  ]);
+} else {
+  // Fallback: run vector search on the whole collection
+  console.log("❌ fall back to whole collection vector search")
+  topDocsRaw = await Doc.aggregate([
+    {
+      $vectorSearch: {
+        index: "vector_index",
+        path: "embedding",
+        queryVector,
+        numCandidates: 50,
+        limit: 6
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        content: 1,
+        score: { $meta: "vectorSearchScore" }
+      }
+    }
+  ]);
+}
 
 
     const topDocs = topDocsRaw.filter(
