@@ -79,8 +79,6 @@ const redisStoreResponse = async (responseKey, query, response) => {
 // ---------------- RAG Chat Route ----------------
 router.post("/chat", chatLimiter, async (req, res) => {
   try {
-    
-
     const { query, userId } = req.body;
     console.log("user query", query);
 
@@ -124,7 +122,6 @@ router.post("/chat", chatLimiter, async (req, res) => {
     // ---------------- Keys ----------------
     const normalizedQuery = query.trim().toLowerCase().replace(/[?.!]/g, "");
     const hash = crypto.createHash("md5").update(normalizedQuery).digest("hex");
-
     const embeddingKey = `embedding:${hash}`;
     const responseKey = `response:${hash}`;
 
@@ -142,7 +139,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
         });
       }
     } catch (err) {
-      console.warn("Redis unavailable for response:", err);
+      console.warn("Redis unavailable for response:", err.message);
     }
 
     // ---------------- Embedding ----------------
@@ -158,7 +155,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
         await redisStoreEmbedding(embeddingKey, query, queryVector);
       }
     } catch (err) {
-      console.warn("Redis unavailable for embedding:", err);
+      console.warn("Redis unavailable for embedding:", err.message);
       queryVector = await createEmbedding(query);
     }
 
@@ -199,10 +196,32 @@ router.post("/chat", chatLimiter, async (req, res) => {
 
     const promptToSend = `${finalPrompt}\n\n${contextInstructions}`;
 
-    // ---------------- Call Gemini API ----------------
-    const answer = await callGemini(promptToSend);
-    const geminiResponse = answer[0].gemini || ["I don't know"];
-    const futureActions = answer[0].future_actions || [];
+    // ---------------- Call Gemini API with retry ----------------
+    let geminiResponse = null;
+    let futureActions = [];
+    let successfulResponse = false; // Track if response is valid
+    const maxRetries = 2;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const answer = await callGemini(promptToSend);
+        geminiResponse = answer?.[0]?.gemini || [];
+        futureActions = answer?.[0]?.future_actions || [];
+        if (geminiResponse.length > 0) {
+          successfulResponse = true;
+          break;
+        }
+        console.warn(`Gemini returned empty response, retrying... (${attempt})`);
+      } catch (err) {
+        console.error(`Gemini call failed on attempt ${attempt}:`, err.message);
+        if (attempt === maxRetries) break;
+      }
+    }
+
+    // Fallback if still empty
+    if (!geminiResponse || geminiResponse.length === 0) {
+      geminiResponse = ["I’m sorry, I couldn’t find an answer to that. Could you rephrase?"];
+    }
 
     // ---------------- Save bot message (keep last 6) ----------------
     await BotChat.updateOne(
@@ -210,8 +229,14 @@ router.post("/chat", chatLimiter, async (req, res) => {
       { $push: { messages: { $each: [{ role: "bot", content: geminiResponse }], $slice: -6 } } }
     );
 
-    // ---------------- Cache Response ----------------
-    await redisStoreResponse(responseKey, query, geminiResponse);
+    // ---------------- Cache Response (only if valid) ----------------
+    if (successfulResponse) {
+      try {
+        await redisStoreResponse(responseKey, query, geminiResponse);
+      } catch (err) {
+        console.warn("Failed to cache response:", err.message);
+      }
+    }
 
     // ---------------- Send Response ----------------
     res.json({
@@ -219,7 +244,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
       future_actions: futureActions,
       context: topDocs.map((d) => ({ content: d.content, score: d.score })),
       cacheHit: false,
-      prompt:promptToSend
+      prompt: promptToSend
     });
 
   } catch (err) {
@@ -227,6 +252,8 @@ router.post("/chat", chatLimiter, async (req, res) => {
     res.status(500).json({ error: "Server error", details: err.message });
   }
 });
+
+
 
 
 export default router;
